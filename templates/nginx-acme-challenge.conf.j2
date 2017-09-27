@@ -1,0 +1,40 @@
+# {{ ansible_managed }}
+
+#############################################################################
+#
+# This config enables to access /.well-known/acme-challenge/xxxxxxxxxxx
+# on all sites (HTTP), including all subdomains.
+# This is required by ACME Challenge (webroot authentication).
+#
+#############################################################################
+
+server {
+
+    listen 80;
+    listen [::]:80;
+
+    # Rule for legitimate ACME Challenge requests
+    # (like /.well-known/acme-challenge/xxxxxxxxx)
+    # We use ^~ here, so that we don't check
+    # other regexes (for speed-up).
+    location ^~ /.well-known/acme-challenge/ {
+
+	# Current specification requires "text/plain"
+        # or no content header at all.
+	default_type "text/plain";
+
+        # This directory must be the same as in
+        # /etc/letsencrypt/cli.ini as "webroot-path"
+        # parameter.
+        root {{ certbot_acme_challenge_webroot }};
+    }
+
+    # Hide /acme-challenge subdirectory
+    # and return 404 on all requests.
+    # This is somewhat more secure than
+    # letting Nginx return 403.
+    location = /.well-known/acme-challenge/ {
+        return 404;
+    }
+
+}

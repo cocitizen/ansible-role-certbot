@@ -1,6 +1,14 @@
 ---
+
 # Global options for configuration file
 certbot_config_file_options: {}
+
+# Certificates to generate.
+certbot_certificates: {}
+
+# ACME challenge webroot configuration.
+certbot_acme_challenge_webroot: /var/www/letsencrypt
+certbot_acme_challenge_webserver: nginx
 
 # Certbot auto-renew cron job configuration (for certificate renewals).
 certbot_auto_renew: true

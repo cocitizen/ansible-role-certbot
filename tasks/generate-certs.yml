@@ -1,0 +1,40 @@
+---
+
+- name: Ensure ACME challenge webroot directory exists.
+  file:
+    state: directory
+    path: "{{ certbot_acme_challenge_webroot }}"
+
+- name: Include ACME challenge configuration.
+  include: "{{ certbot_acme_challenge_webserver }}-acme-challenge.yml"
+
+- name: Ensure web server loads the Acme challenge config file.
+  service:
+    name: "{{ certbot_acme_challenge_webserver }}"
+    state: restarted
+  when: certbot_acme_challenge_conf_deployed.changed
+
+- name: Generate certificates.
+  command: "{{ certbot_script }} certonly --webroot -w {{ certbot_acme_challenge_webroot }} --email {{ item.email }} -n --agree-tos --keep -d {{ item.domains|join(' -d ') }} {{ item.force | default(false) | ternary('--force', '') }}"
+  args:
+    creates: "/etc/letsencrypt/live/{{ item.domains | first() }}/{{ item.force | default(false) | ternary('force-cert-regeneration', '') }}"
+  with_items: "{{ certbot_certificates }}"
+  loop_control:
+    label: "{{ item.domains | first() }}"
+
+- name: Check whether certificates were generated.
+  stat:
+    path: "/etc/letsencrypt/live/{{ item.domains | first() }}/fullchain.pem"
+    follow: True
+  with_items: "{{ certbot_certificates }}"
+  loop_control:
+    label: "{{ item.domains | first() }}"
+  register: certbot_certificates_check
+
+- name: Provide variable to simplify lookups of certificates in templates.
+  set_fact:
+    certbot_certificates_paths: "{{ certbot_certificates_paths | default({}) | combine( { item.item.domains | first(): { 'cert': item.stat.path, 'key': item.stat.path | replace('fullchain', 'privkey') } }, recursive=true) }}"
+  when: item.stat.exists
+  with_items: "{{ certbot_certificates_check.results }}"
+  loop_control:
+    label: "{{ item.item.domains | first() }}"

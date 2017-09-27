@@ -1,0 +1,8 @@
+---
+
+- name: Deploy Nginx configuration for ACME challenge requests.
+  template:
+    src: templates/nginx-acme-challenge.conf.j2
+    dest: /etc/nginx/sites-enabled/acme-challenge.conf
+  register: certbot_acme_challenge_conf_deployed
+

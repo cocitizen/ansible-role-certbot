@@ -11,3 +11,6 @@
 
 - include: renew-cron.yml
   when: certbot_auto_renew
+
+- include: generate-certs.yml
+  when: certbot_certificates | length
